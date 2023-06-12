@@ -1,34 +1,33 @@
+from http.server import BaseHTTPRequestHandler
+from urllib import parse
 import requests
+
 print("hello world")
-def capital_finder(request):
-    # Extract the query parameter from the request
-    country = request.args.get('country')
-    capital = request.args.get('capital')
-
-    # Check if the country query parameter is provided
-    if country:
-        # Make a GET request to the REST Countries API
-        response = requests.get(f"https://restcountries.com/v3.1/name/{country}")
-        data = response.json()
-
-        # Extract the capital from the API response
-        capital = data[0]['capital']
-
-        # Send the response
-        return f"The capital of {country} is {capital}."
-
-    # Check if the capital query parameter is provided
-    elif capital:
-        # Make a GET request to the REST Countries API
-        response = requests.get(f"https://restcountries.com/v3.1/capital/{capital}")
-        data = response.json()
-
-        # Extract the country from the API response
-        country = data[0]['name']['common']
-
-        # Send the response
-        return f"{capital} is the capital of {country}."
-
-    # Handle the case when no valid query parameters are provided
-    else:
-        return "Please provide a valid country or capital query parameter."
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        path = self.path
+        url_components = parse.urlsplit(path)
+        query_string_list = parse.parse_qsl(url_components.query)
+        print(query_string_list)
+        dictionary = dict(query_string_list)
+        url = "https://restcountries.com/v3.1/"
+        country = dictionary.get("country")
+        capital = dictionary.get("capital")
+        if capital:
+            response = requests.get(url + "capital/" + capital)
+            data = response.json()
+            capitals = data[0]["capital"]
+            country_name = data[0]["name"]["common"]
+            message = f"The capital of {country_name} is {capitals[0]}"
+        elif country:
+            response = requests.get(url + "name/" + country)
+            data = response.json()
+            capital_response = data[0]["capital"]
+            message = f"{capital_response[0]} is the capital of {country}"
+        else:
+            message = "Give me a valid country please"
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        self.wfile.write(message.encode())
+        return
